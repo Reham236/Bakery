@@ -1,0 +1,81 @@
+const Order = require('../models/Order');
+
+// إضافة طلب جديد
+exports.createOrder = async (req, res) => {
+  try {
+    const { products, total } = req.body;
+
+    // التحقق من صحة البيانات
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ message: 'Invalid products data' });
+    }
+    if (!total || total <= 0) {
+      return res.status(400).json({ message: 'Invalid total price' });
+    }
+
+    // إنشاء الطلب
+    const order = new Order({
+      user: req.user.userId, // ID المستخدم اللي بيعمل الطلب (موجود في الـ Token)
+      products,
+      total,
+      status: 'Pending', // الحالة الافتراضية للطلب
+    });
+
+    await order.save();
+
+    res.status(201).json({ message: 'Order placed successfully', order });
+  } catch (error) {
+    console.error('Error creating order:', error); // طباعة الخطأ في الـ Console عشان نشوف التفاصيل
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// تعديل حالة الطلب (خاص بالمشرف فقط)
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const orderId = req.params.orderId;
+
+    // التحقق من صحة الحالة
+    const allowedStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid order status' });
+    }
+
+    // تحديث حالة الطلب
+    const order = await Order.findByIdAndUpdate(orderId, { status }, { new: true });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    res.json({ message: 'Order status updated successfully', order });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// عرض جميع الطلبات (خاص بالمشرف فقط)
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().populate('user', 'name email'); // تحميل بيانات المستخدم المرتبطة بالطلب
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching all orders:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// عرض طلب واحد
+exports.getOrderById = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+
+    // البحث عن الطلب باستخدام الـ ID
+    const order = await Order.findById(orderId).populate('user', 'name email');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    res.json(order);
+  } catch (error) {
+    console.error('Error fetching order by ID:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
