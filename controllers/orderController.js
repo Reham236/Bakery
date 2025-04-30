@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 
+
 // إضافة طلب جديد
 exports.createOrder = async (req, res) => {
   try {
@@ -22,6 +23,8 @@ exports.createOrder = async (req, res) => {
     });
 
     await order.save();
+    // بعد ما يتم حفظ الطلب
+await sendNewOrderNotificationToAdmin(order._id);
 
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (error) {
@@ -47,6 +50,8 @@ exports.updateOrderStatus = async (req, res) => {
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     res.json({ message: 'Order status updated successfully', order });
+    // بعد ما يتم تحديث حالة الطلب
+    await sendOrderStatusUpdateNotification(order.user, order._id, status);
   } catch (error) {
     console.error('Error updating order status:', error);
     res.status(500).json({ message: 'Server Error' });
@@ -77,5 +82,38 @@ exports.getOrderById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching order by ID:', error);
     res.status(500).json({ message: 'Server Error' });
+  }
+};
+const Notification = require('../models/Notification');
+const User = require('../models/User');
+
+// إرسال إشعار للـ Admin عن طلب جديد
+const sendNewOrderNotificationToAdmin = async (orderId) => {
+  try {
+    // جلب بيانات الـ Admin
+    const adminUser = await User.findOne({ role: 'admin' });
+    if (!adminUser) return;
+
+    // إنشاء رسالة الإشعار
+    const message = `New order received with ID: ${orderId}`;
+
+    // إنشاء الإشعار
+    await Notification.create({ user: adminUser._id, message });
+  } catch (error) {
+    console.error('Error sending new order notification:', error);
+  }
+};
+
+
+// إرسال إشعار للمستخدم عن تحديث حالة الطلب
+const sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
+  try {
+    // إنشاء رسالة الإشعار
+    const message = `Your order with ID: ${orderId} has been updated to ${status}`;
+
+    // إنشاء الإشعار
+    await Notification.create({ user: userId, message });
+  } catch (error) {
+    console.error('Error sending order status update notification:', error);
   }
 };

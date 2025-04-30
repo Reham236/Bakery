@@ -4,6 +4,9 @@ const Product = require('../models/Product');
 exports.addReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
     const product = await Product.findById(req.params.productId);
 
     if (!product) return res.status(404).json({ message: 'Product not found' });
