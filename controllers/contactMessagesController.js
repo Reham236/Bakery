@@ -1,6 +1,6 @@
-// controllers/contactController.js
 
-const ContactMessage = require('../models/ContactMessage');
+// controllers/contactMessagesController.js
+const ContactMessage = require('../models/ContactMessages');
 
 // إضافة رسالة جديدة
 exports.createMessage = async (req, res) => {

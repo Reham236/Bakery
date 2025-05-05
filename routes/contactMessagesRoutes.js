@@ -1,4 +1,4 @@
-// routes/contactRoutes.js
+// routes/contactMessageRoutes.js
 
 const express = require('express');
 const router = express.Router();

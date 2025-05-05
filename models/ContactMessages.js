@@ -1,4 +1,4 @@
-// models/ContactMessage.js
+// models/ContactMessages.js
 
 const mongoose = require('mongoose');
 
