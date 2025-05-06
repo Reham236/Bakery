@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/', authMiddleware(['admin']), notificationController.sendNotification);
 
 // عرض الإشعارات الخاصة بالمستخدم (User فقط)
-router.get('/', authMiddleware(['user']), notificationController.getUserNotifications);
+router.get('/', authMiddleware(['user','admin']), notificationController.getUserNotifications);
 
 // تحديث حالة الإشعار إلى مقروء (User فقط)
 router.put('/:id/mark-as-read', authMiddleware(['user']), notificationController.markNotificationAsRead);

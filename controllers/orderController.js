@@ -24,7 +24,7 @@ exports.createOrder = async (req, res) => {
 
     await order.save();
     // بعد ما يتم حفظ الطلب
-await sendNewOrderNotificationToAdmin(order._id);
+await sendNewOrderNotificationToAdmin(order.name);
 
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (error) {
@@ -88,17 +88,17 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 
 // إرسال إشعار للـ Admin عن طلب جديد
-const sendNewOrderNotificationToAdmin = async (orderId) => {
+const sendNewOrderNotificationToAdmin = async (orderName) => {
   try {
     // جلب بيانات الـ Admin
     const adminUser = await User.findOne({ role: 'admin' });
     if (!adminUser) return;
 
     // إنشاء رسالة الإشعار
-    const message = `New order received with ID: ${orderId}`;
+    const message = `New order received with ID: ${orderName}`;
 
     // إنشاء الإشعار
-    await Notification.create({ user: adminUser._id, message });
+    await Notification.create({ user: adminUser.name, message });
   } catch (error) {
     console.error('Error sending new order notification:', error);
   }

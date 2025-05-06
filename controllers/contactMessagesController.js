@@ -34,16 +34,7 @@ exports.createMessage = async (req, res) => {
 
 exports.getAllMessages = async (req, res) => {
     try {
-        const messages = await ContactMessage.find({}, {
-            _id: 0,           // لا تعرض الـ ID الداخلي
-            __v: 0,           // لا تعرض version
-            name: 1,
-            email: 1,
-            phone: 1,
-            subject: 1,
-            message: 1,
-            date: 1
-        });
+        const messages = await ContactMessage.find();
 
         res.json({
             success: true,
