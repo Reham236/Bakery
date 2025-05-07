@@ -37,6 +37,7 @@ app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes); // Add notification routes
 app.use('/api/contact', contactMessagesRoutes); // Add contact routes
+app.use('/api/settings', require('./routes/siteSettingsRoutes')); // Add site settings routes
 
 
 // Start the server
