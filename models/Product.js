@@ -15,6 +15,14 @@ const mongoose = require('mongoose');
           createdAt: { type: Date, default: Date.now },
         },
       ],
+      offer: {
+        title: { type: String }, // عنوان العرض
+        discountPercentage: { type: Number, default: 0 }, // نسبة الخصم
+        startDate: { type: Date }, // تاريخ بداية العرض
+        endDate: { type: Date }, // تاريخ نهاية العرض
+        isOnSale: { type: Boolean, default: false }, // إذا كان المنتج عليه عرض ولا لأ
+      },
+
     });
     
     module.exports = mongoose.model('Product', productSchema);
