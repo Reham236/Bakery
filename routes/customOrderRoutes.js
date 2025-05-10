@@ -9,13 +9,15 @@ router.post('/', authMiddleware(['user']), customOrderController.createCustomOrd
 
 // عرض جميع الطلبات المخصصة (Admin فقط)
 router.get('/', authMiddleware(['admin']), customOrderController.getAllCustomOrders);
+router.get('/:id', authMiddleware(['admin']), customOrderController.getCustomOrderById);
+router.put('/:id/update-price', authMiddleware(['admin']), customOrderController.updateCustomOrderPrice);
 
 // تحديث حالة الطلب المخصص (Admin فقط)
 router.put('/:id/status', authMiddleware(['admin']), customOrderController.updateCustomOrderStatus);
 
-router.get(
-    '/:CustomOrderId', // Add :CustomOrderId as a URL parameter
-    authMiddleware(['user', 'admin']), // التحقق من أن المستخدم هو User اللي عمل الطلب أو Admin
-    customOrderController.getCustomOrderById
-  );
+// router.get(
+//     '/:CustomOrderId', // Add :CustomOrderId as a URL parameter
+    // authMiddleware(['user', 'admin']), // التحقق من أن المستخدم هو User اللي عمل الطلب أو Admin
+//     customOrderController.getCustomOrderById
+//   );
 module.exports = router;

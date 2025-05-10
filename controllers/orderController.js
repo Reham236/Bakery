@@ -1,30 +1,58 @@
 const Order = require('../models/Order');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
+const Product = require('../models/Product');
+// const sendNewOrderNotificationToAdmin = require('../utils/notifications');
 
-
-// إضافة طلب جديد
 exports.createOrder = async (req, res) => {
   try {
-    const { products, total } = req.body;
+    const { products } = req.body;
 
     // التحقق من صحة البيانات
     if (!products || !Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ message: 'Invalid products data' });
     }
-    if (!total || total <= 0) {
-      return res.status(400).json({ message: 'Invalid total price' });
+
+    // التحقق من وجود المنتجات وحساب السعر الكلي
+    let total = 0;
+    const productsWithDetails = [];
+
+    for (const productData of products) {
+      const product = await Product.findById(productData.productId);
+      if (!product) {
+        return res.status(404).json({ message: `Product not found: ${productData.productId}` });
+      }
+
+      // التحقق من توفر الكمية
+      if (product.availability === false) {
+        return res.status(400).json({ message: `Product out of stock: ${product.name}` });
+      }
+
+      // حساب السعر الإجمالي لكل منتج
+      const productTotal = product.price * productData.quantity;
+      total += productTotal;
+
+      // تخزين تفاصيل المنتج مع الكمية
+      productsWithDetails.push({
+        product: product._id,
+        quantity: productData.quantity,
+        price: product.price,
+        totalPrice: productTotal,
+      });
     }
 
     // إنشاء الطلب
     const order = new Order({
       user: req.user.userId, // ID المستخدم اللي بيعمل الطلب (موجود في الـ Token)
-      products,
-      total,
+      products: productsWithDetails,
+      total, // السعر الكلي اللي اتجمع
       status: 'Pending', // الحالة الافتراضية للطلب
     });
 
     await order.save();
-    // بعد ما يتم حفظ الطلب
-await sendNewOrderNotificationToAdmin(order.name);
+
+    // إرسال إشعار للـ Admin
+    await sendNewOrderNotificationToAdmin(order._id);
 
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (error) {
@@ -47,11 +75,13 @@ exports.updateOrderStatus = async (req, res) => {
 
     // تحديث حالة الطلب
     const order = await Order.findByIdAndUpdate(orderId, { status }, { new: true });
+    await sendOrderStatusUpdateNotification(order.user, order._id, status);
+
     if (!order) return res.status(404).json({ message: 'Order not found' });
+
 
     res.json({ message: 'Order status updated successfully', order });
     // بعد ما يتم تحديث حالة الطلب
-    await sendOrderStatusUpdateNotification(order.user, order._id, status);
   } catch (error) {
     console.error('Error updating order status:', error);
     res.status(500).json({ message: 'Server Error' });
@@ -84,36 +114,42 @@ exports.getOrderById = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
-const Notification = require('../models/Notification');
-const User = require('../models/User');
 
-// إرسال إشعار للـ Admin عن طلب جديد
-const sendNewOrderNotificationToAdmin = async (orderName) => {
+
+const sendNewOrderNotificationToAdmin = async (orderId) => {
   try {
-    // جلب بيانات الـ Admin
-    const adminUser = await User.findOne({ role: 'admin' });
-    if (!adminUser) return;
-
-    // إنشاء رسالة الإشعار
-    const message = `New order received with ID: ${orderName}`;
-
-    // إنشاء الإشعار
-    await Notification.create({ user: adminUser.name, message });
-  } catch (error) {
-    console.error('Error sending new order notification:', error);
-  }
+      const adminUser = await User.findOne({ role: 'admin' });
+         console.log('Admin User:', adminUser);
+         if (!adminUser) {
+           console.error('Admin user not found');
+           return;
+         }
+     
+         // إنشاء رسالة الإشعار
+         const message = `New  order received with ID: ${orderId}`;
+     
+         // إنشاء الإشعار
+         await Notification.create({
+           user: adminUser._id, // هنا بنستخدم ID بتاع الـ Admin
+           type:'order_created',
+           message
+         });
+     
+         console.log('Notification sent to admin successfully');
+       } catch (error) {
+         console.error('Error sending new  order notification:', error);
+       }
 };
-
-
-// إرسال إشعار للمستخدم عن تحديث حالة الطلب
 const sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
   try {
-    // إنشاء رسالة الإشعار
-    const message = `Your order with ID: ${orderId} has been updated to ${status}`;
+      const message = `تم تحديث حالة الطلب #${orderId} إلى: ${status}`;
 
-    // إنشاء الإشعار
-    await Notification.create({ user: userId, message });
+      await Notification.create({
+          user: userId,
+          message,
+          type: 'order_updated'
+      });
   } catch (error) {
-    console.error('Error sending order status update notification:', error);
+      console.error('Error sending order status update notification:', error);
   }
 };

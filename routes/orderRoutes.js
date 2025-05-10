@@ -6,23 +6,23 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 
 // Middleware for Validation
-const validateOrder = [
-  body('products').isArray({ min: 1 }).withMessage('Products must be an array with at least one item'),
-  body('total').isNumeric({ min: 0 }).withMessage('Total price must be a positive number'),
-];
+// const validateOrder = [
+//   body('products').isArray({ min: 1 }).withMessage('Products must be an array with at least one item'),
+  // body('total').isNumeric({ min: 0 }).withMessage('Total price must be a positive number'),
+// ];
 
 // إضافة طلب جديد (User only)
 router.post(
   '/',
   authMiddleware(['user']), // التحقق من أن المستخدم مسجل
-  validateOrder,
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-  },
+  // validateOrder,
+  // (req, res, next) => {
+  //   const errors = validationResult(req);
+  //   if (!errors.isEmpty()) {
+  //     return res.status(400).json({ errors: errors.array() });
+  //   }
+  //   next();
+  // },
   orderController.createOrder
 );
 

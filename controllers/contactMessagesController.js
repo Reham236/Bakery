@@ -1,6 +1,8 @@
 
 // controllers/contactMessagesController.js
 const ContactMessage = require('../models/ContactMessages');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // إضافة رسالة جديدة
 exports.createMessage = async (req, res) => {
@@ -16,6 +18,8 @@ exports.createMessage = async (req, res) => {
     try {
         const newMessage = new ContactMessage({ name, email, phone, subject, message });
         await newMessage.save();
+        // إرسال إشعار للأدمن
+        await sendContactMessageNotificationToAdmin(newMessage.subject);
 
         res.status(201).json({
             success: true,
@@ -47,4 +51,28 @@ exports.getAllMessages = async (req, res) => {
             error: 'Internal Server Error'
         });
     }
+};
+const sendContactMessageNotificationToAdmin = async (messageSub) => {
+  try {
+      const adminUser = await User.findOne({ role: 'admin' });
+         console.log('Admin User:', adminUser);
+         if (!adminUser) {
+           console.error('Admin user not found');
+           return;
+         }
+     
+         // إنشاء رسالة الإشعار
+         const message = `contact message received with subject: ${messageSub}`;
+     
+         // إنشاء الإشعار
+         await Notification.create({
+           user: adminUser._id, // هنا بنستخدم ID بتاع الـ Admin
+           type:'contact_message',
+           message
+         });
+     
+         console.log('Notification sent to admin successfully');
+       } catch (error) {
+         console.error('Error sending new contact Message notification:', error);
+       }
 };

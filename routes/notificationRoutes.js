@@ -1,16 +1,15 @@
 const express = require('express');
+const router = express.Router();
 const notificationController = require('../controllers/notificationController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-const router = express.Router();
+// جلب إشعارات المستخدم الحالي
+router.get('/', authMiddleware(['user', 'admin']), notificationController.getUserNotifications);
 
-// إرسال إشعار جديد (Admin فقط)
-router.post('/', authMiddleware(['admin']), notificationController.sendNotification);
+// Get Admin Notifications
+router.get('/admin', authMiddleware(['admin']), notificationController.getAdminNotifications);
 
-// عرض الإشعارات الخاصة بالمستخدم (User فقط)
-router.get('/', authMiddleware(['user','admin']), notificationController.getUserNotifications);
-
-// تحديث حالة الإشعار إلى مقروء (User فقط)
-router.put('/:id/mark-as-read', authMiddleware(['user']), notificationController.markNotificationAsRead);
+// وضع علامة "مقروء" على إشعار
+router.patch('/:id/read', authMiddleware(['user', 'admin']), notificationController.markNotificationAsRead);
 
 module.exports = router;
