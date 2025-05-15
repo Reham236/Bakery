@@ -6,7 +6,11 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'user'], default: 'user' },
-  image: { type: String }, // هنا بندخل الحقل الجديد للصورة
+  image: { type: String },
+  favorites: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Product' 
+  }] // <-- هنا بندخل الحقل الجديد
 });
 
 // Hash password before saving

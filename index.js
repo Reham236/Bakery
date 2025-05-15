@@ -9,6 +9,8 @@ const customOrderRoutes = require('./routes/customOrderRoutes'); // Import custo
 const adminRoutes = require('./routes/adminRoutes'); // Import admin routes
 const notificationRoutes = require('./routes/notificationRoutes'); // Import notification routes
 const contactMessagesRoutes = require('./routes/contactMessagesRoutes'); // Import contact routes
+const favoriteRoutes = require('./routes/favoriteRoutes');
+
 dotenv.config();
 
 // Initialize Express app
@@ -38,6 +40,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes); // Add notification routes
 app.use('/api/contact', contactMessagesRoutes); // Add contact routes
 app.use('/api/settings', require('./routes/siteSettingsRoutes')); // Add site settings routes
+app.use('/api/favorites', favoriteRoutes);
 
 
 // Start the server
