@@ -1,8 +1,8 @@
 const Order = require('../models/Order');
 
 const Product = require('../models/Product');
-const { sendNewOrderNotificationToAdmin } = require('../utils/notificationUtils');
-const { sendOrderStatusUpdateNotification } = require('../utils/notificationUtils');
+const { sendNewOrderNotificationToAdmin } = require('./notificationController');
+const { sendOrderStatusUpdateNotification } = require('./notificationController');
 
 exports.createOrder = async (req, res) => {
   try {

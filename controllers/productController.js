@@ -1,7 +1,7 @@
   const Product = require('../models/Product');
  
-  const { sendNewProductNotificationToUsers } = require('../utils/notificationUtils');
- const { sendOfferAddedNotificationToAdmin } = require('../utils/notificationUtils');
+  const { sendNewProductNotificationToUsers } = require('./notificationController');
+ const { sendOfferAddedNotificationToAdmin } = require('./notificationController');
   // Create a new product
   exports.createProduct = async (req, res) => {
     try {

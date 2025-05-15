@@ -3,8 +3,8 @@
 const ContactMessage = require('../models/ContactMessages');
 const User = require('../models/User');
 // const Notification = require('../models/Notification');
-const { sendReplyNotificationToUser } = require('../utils/notificationUtils');
-const { sendContactMessageNotificationToAdmin } = require('../utils/notificationUtils');
+const { sendReplyNotificationToUser } = require('./notificationController');
+const { sendContactMessageNotificationToAdmin } = require('./notificationController');
 
 // إضافة رسالة جديدة
 exports.createMessage = async (req, res) => {
