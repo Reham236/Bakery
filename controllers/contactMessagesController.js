@@ -2,7 +2,9 @@
 // controllers/contactMessagesController.js
 const ContactMessage = require('../models/ContactMessages');
 const User = require('../models/User');
-const Notification = require('../models/Notification');
+// const Notification = require('../models/Notification');
+const { sendReplyNotificationToUser } = require('../utils/notificationUtils');
+const { sendContactMessageNotificationToAdmin } = require('../utils/notificationUtils');
 
 // إضافة رسالة جديدة
 exports.createMessage = async (req, res) => {
@@ -34,7 +36,7 @@ exports.createMessage = async (req, res) => {
     }
 };
 
-// controllers/contactController.js
+
 
 exports.getAllMessages = async (req, res) => {
     try {
@@ -52,27 +54,92 @@ exports.getAllMessages = async (req, res) => {
         });
     }
 };
-const sendContactMessageNotificationToAdmin = async (messageSub) => {
-  try {
-      const adminUser = await User.findOne({ role: 'admin' });
-         console.log('Admin User:', adminUser);
-         if (!adminUser) {
-           console.error('Admin user not found');
-           return;
-         }
-     
-         // إنشاء رسالة الإشعار
-         const message = `contact message received with subject: ${messageSub}`;
-     
-         // إنشاء الإشعار
-         await Notification.create({
-           user: adminUser._id, // هنا بنستخدم ID بتاع الـ Admin
-           type:'contact_message',
-           message
-         });
-     
-         console.log('Notification sent to admin successfully');
-       } catch (error) {
-         console.error('Error sending new contact Message notification:', error);
-       }
+
+
+
+// رفع الرد من الأدمن
+exports.replyToMessage = async (req, res) => {
+    const { messageId } = req.params;
+    const { reply } = req.body;
+
+    if (!reply) {
+        return res.status(400).json({
+            success: false,
+            error: 'Reply message is required.'
+        });
+    }
+
+    try {
+        const message = await ContactMessage.findById(messageId);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                error: 'Message not found'
+            });
+        }
+
+        // تحديث الرسالة بالرد
+        message.reply = reply;
+        message.repliedAt = new Date();
+        await message.save();
+
+        // إرسال إشعار للمستخدم
+        await sendReplyNotificationToUser(message.email, message.subject);
+
+        res.json({
+            success: true,
+            message: 'Reply sent successfully',
+            data: message
+        });
+
+    } catch (error) {
+        console.error('Error replying to message:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal Server Error'
+        });
+    }
+};
+
+;
+
+
+
+exports.getMyMessages = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        // البحث عن المستخدم لاستخراج البريد الإلكتروني
+        const user = await User.findById(userId).select('email');
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // جلب الرسائل الخاصة بهذا البريد
+        const messages = await ContactMessage.find({ email: user.email });
+      
+       console.log('replyMessage:', messages);
+       res.json({
+            success: true,
+            count: messages.length,
+            data: messages.map(message => ({
+                _id: message._id,
+               
+                subject: message.subject,
+             
+                reply: message.reply,
+                repliedAt: message.repliedAt
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal Server Error'
+        });
+    }
 };

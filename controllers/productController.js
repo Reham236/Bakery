@@ -1,7 +1,7 @@
   const Product = require('../models/Product');
-  const Notification = require('../models/Notification');
-  const User = require('../models/User');
-
+ 
+  const { sendNewProductNotificationToUsers } = require('../utils/notificationUtils');
+ const { sendOfferAddedNotificationToAdmin } = require('../utils/notificationUtils');
   // Create a new product
   exports.createProduct = async (req, res) => {
     try {
@@ -108,7 +108,6 @@
   };
 
   // Edit Offer
-  // Edit Offer
   exports.editOfferForProduct = async (req, res) => {
     try {
       const { title, discountPercentage, startDate, endDate, isOnSale } = req.body;
@@ -132,9 +131,6 @@
       res.status(500).json({ message: 'Server Error' });
     }
   };
-
-
-  // Delete Offer
   // Delete Offer
   exports.deleteOfferFromProduct = async (req, res) => {
     try {
@@ -201,29 +197,4 @@
       console.error('Get Products on Sale Error:', error);
       res.status(500).json({ message: 'Server Error' });
     }
-  };
-  const sendNewProductNotificationToUsers = async (productName) => {
-    try {
-        const users = await User.find();
-        const message = `تم إضافة منتج جديد: ${productName}`;
-
-        for (const user of users) {
-            await Notification.create({ user: user._id, message, type: 'new_product' });
-        }
-    } catch (error) {
-        console.error('Error sending new product notification:', error);
-    }
-};
-const sendOfferAddedNotificationToAdmin = async (productId) => {
-  try {
-      const admin = await User.findOne({ role: 'admin' });
-      if (!admin) return;
-
-      const product = await Product.findById(productId);
-      const message = `تم إضافة عرض على المنتج: ${product.name}`;
-
-      await Notification.create({ user: admin._id, message, type: 'offer_added' });
-  } catch (error) {
-      console.error('Error sending offer added notification:', error);
   }
-};

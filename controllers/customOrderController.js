@@ -1,19 +1,40 @@
 const CustomOrder = require('../models/CustomOrder');
-const Notification = require('../models/Notification');
-const User = require('../models/User');
+
 const { sendCustomOrderPriceUpdateNotification } = require('./notificationController');
-
-
+const { sendNewCustomOrderNotificationToAdmin } = require('./notificationController');
+const { sendOrderStatusUpdateNotification } = require('./notificationController');
 // إضافة طلب مخصص
 exports.createCustomOrder = async (req, res) => {
   try {
-    const { description, designImage } = req.body;
-    const customOrder = new CustomOrder({ user: req.user.userId, description, designImage });
+    const { description, designImage, deliveryDate } = req.body;
+
+    // التحقق من وجود البيانات الأساسية
+    if (!description) {
+      return res.status(400).json({ message: 'Description is required' });
+    }
+
+    const orderData = {
+      user: req.user.userId,
+      description,
+      designImage
+    };
+
+    // إذا كان هناك تاريخ تسليم، نضيفه
+    if (deliveryDate) {
+      orderData.deliveryDate = new Date(deliveryDate);
+    }
+
+    const customOrder = new CustomOrder(orderData);
     await customOrder.save();
-    // بعد ما يتم حفظ الطلب المخصص
-await sendNewCustomOrderNotificationToAdmin(customOrder._id);
-    res.status(201).json({ message: 'Custom order placed successfully', customOrder });
+
+    await sendNewCustomOrderNotificationToAdmin(customOrder._id);
+
+    res.status(201).json({ 
+      message: 'Custom order placed successfully', 
+      customOrder 
+    });
   } catch (error) {
+    console.error('Error creating custom order:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -107,41 +128,4 @@ exports.updateCustomOrderStatus = async (req, res) => {
 
 
 // إرسال إشعار للـ Admin عن طلب مخصص جديد
-const sendNewCustomOrderNotificationToAdmin = async (customOrderId) => {
-  try {
-    // جلب بيانات الـ Admin
-    const adminUser = await User.findOne({ role: 'admin' });
-    console.log('Admin User:', adminUser);
-    if (!adminUser) {
-      console.error('Admin user not found');
-      return;
-    }
 
-    // إنشاء رسالة الإشعار
-    const message = `New custom order received with ID: ${customOrderId}`;
-
-    // إنشاء الإشعار
-    await Notification.create({
-      user: adminUser._id,
-      type:'custom_order_received', // هنا بنستخدم ID بتاع الـ Admin
-      message,
-    });
-
-    console.log('Notification sent to admin successfully');
-  } catch (error) {
-    console.error('Error sending new custom order notification:', error);
-  }
-};
-const sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
-  try {
-      const message = `Your custom order with ID: ${orderId} has been updated to status: ${status}.`;
-
-      await Notification.create({
-          user: userId,
-          message,
-          type: 'order_updated'
-      });
-  } catch (error) {
-      console.error('Error sending order status update notification:', error);
-  }
-};

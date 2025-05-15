@@ -1,8 +1,8 @@
 const Order = require('../models/Order');
-const User = require('../models/User');
-const Notification = require('../models/Notification');
+
 const Product = require('../models/Product');
-// const sendNewOrderNotificationToAdmin = require('../utils/notifications');
+const { sendNewOrderNotificationToAdmin } = require('../utils/notificationUtils');
+const { sendOrderStatusUpdateNotification } = require('../utils/notificationUtils');
 
 exports.createOrder = async (req, res) => {
   try {
@@ -114,42 +114,137 @@ exports.getOrderById = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+const paypal = require('../config/paypalConfig');
 
+// 1. إنشاء الدفع
+// Update your createPayPalPayment function
+exports.createPayPalPayment = async (req, res) => {
+    const { cartItems, total } = req.body;
 
-const sendNewOrderNotificationToAdmin = async (orderId) => {
-  try {
-      const adminUser = await User.findOne({ role: 'admin' });
-         console.log('Admin User:', adminUser);
-         if (!adminUser) {
-           console.error('Admin user not found');
-           return;
-         }
-     
-         // إنشاء رسالة الإشعار
-         const message = `New  order received with ID: ${orderId}`;
-     
-         // إنشاء الإشعار
-         await Notification.create({
-           user: adminUser._id, // هنا بنستخدم ID بتاع الـ Admin
-           type:'order_created',
-           message
-         });
-     
-         console.log('Notification sent to admin successfully');
-       } catch (error) {
-         console.error('Error sending new  order notification:', error);
-       }
+    // Add small random amount to avoid round numbers
+    const randomizedTotal = (total + Math.random() * 0.99).toFixed(2);
+
+    const paymentDetails = {
+        "intent": "sale",
+        "payer": {
+            "payment_method": "paypal"
+        },
+        "redirect_urls": {
+            "return_url": "http://localhost:5000/api/orders/success",
+            "cancel_url": "http://localhost:5000/api/orders/cancel"
+        },
+        "transactions": [{
+            "amount": {
+                "total": randomizedTotal,
+                "currency": "EGP",
+                "details": {
+                    "subtotal": randomizedTotal,
+                    "shipping": "0.00",
+                    "tax": "0.00"
+                }
+            },
+            "description": "Test Order - Bakery Items",
+            "item_list": {
+                "items": cartItems.map((item, index) => ({
+                    "name": `TEST-${item.name}`,
+                    "sku": `TEST-${item.productId}`,
+                    "price": (item.price + 0.01).toFixed(2), // Avoid round numbers
+                    "currency": "EGP",
+                    "quantity": item.quantity
+                }))
+            }
+        }]
+    };
+
+    // Add debug logging
+    console.log('Sending PayPal payment request:', JSON.stringify(paymentDetails, null, 2));
+
+    paypal.payment.create(paymentDetails, function (error, payment) {
+        if (error) {
+            console.error('Detailed PayPal Error:', {
+                message: error.message,
+                response: error.response,
+                stack: error.stack
+            });
+            return res.status(500).json({ 
+                message: 'Error creating payment',
+                details: error.response 
+            });
+        }
+        const approvalUrl = payment.links.find(link => link.rel === 'approval_url').href;
+        res.json({ approvalUrl });
+    });
 };
-const sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
-  try {
-      const message = `تم تحديث حالة الطلب #${orderId} إلى: ${status}`;
+// 2. نجاح الدفع
+// Update handlePaymentSuccess function
+exports.handlePaymentSuccess = async (req, res) => {
+    const payerId = req.query.PayerID;
+    const paymentId = req.query.paymentId;
 
-      await Notification.create({
-          user: userId,
-          message,
-          type: 'order_updated'
-      });
-  } catch (error) {
-      console.error('Error sending order status update notification:', error);
-  }
+    const executePaymentDetails = {
+        "payer_id": payerId
+    };
+
+    console.log('Executing PayPal payment:', paymentId);
+
+    paypal.payment.execute(paymentId, executePaymentDetails, async function (error, payment) {
+        if (error) {
+            console.error('Detailed PayPal Execution Error:', {
+                message: error.message,
+                debug_id: error.response.debug_id,
+                details: error.response,
+                stack: error.stack
+            });
+            
+            // Redirect to failure page with error details
+            return res.redirect(`http://localhost:5000/payment-failed?error=${encodeURIComponent(error.message)}`);
+        }
+
+        try {
+            const userId = req.user.userId;
+            const products = payment.transactions[0].item_list.items.map(item => ({
+                productId: item.sku.replace('TEST-', ''), // Remove test prefix
+                quantity: item.quantity,
+                price: parseFloat(item.price)
+            }));
+
+            const newOrder = new Order({
+                user: userId,
+                products,
+                total: payment.transactions[0].amount.total,
+                status: 'Paid',
+                paymentId: payment.id,
+                paymentDetails: payment // Store full payment details for reference
+            });
+
+            await newOrder.save();
+            await sendNewOrderNotificationToAdmin(newOrder._id);
+
+            res.redirect('http://localhost:5000/order-success/' + newOrder._id);
+        } catch (dbError) {
+            console.error('Database Error:', dbError);
+            res.redirect('http://localhost:5000/payment-failed?error=database_error');
+        }
+    });
 };
+// 3. إلغاء الدفع
+exports.handlePaymentCancel = (req, res) => {
+    res.redirect('http://localhost:5000/cart'); // ← صفحة الفشل
+};
+// Add new failure handler
+exports.handlePaymentFailure = async (req, res) => {
+    const { error } = req.query;
+    console.log('Payment failed with error:', error);
+    
+    // Here you could:
+    // 1. Log the failure to your database
+    // 2. Send notification to admin
+    // 3. Update any pending orders
+    
+    res.status(400).json({ 
+        success: false,
+        error: error || 'Payment processing failed'
+    });
+};
+
+

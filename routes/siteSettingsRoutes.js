@@ -9,4 +9,4 @@ router.get('/', authMiddleware(['admin']), siteSettingsController.getSettings);
 // PUT /api/settings/update - تحديث الإعدادات
 router.put('/update', authMiddleware(['admin']), siteSettingsController.updateSettings);
 
-module.exports = router;
+module.exports = router; 

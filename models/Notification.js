@@ -11,6 +11,7 @@ const notificationSchema = new mongoose.Schema({
             'order_created',
             'order_updated',
             'contact_message',
+            'reply_message',
             'offer_added',
             'product_updated',
             'product_deleted',

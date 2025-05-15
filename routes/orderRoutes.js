@@ -25,6 +25,10 @@ router.post(
   // },
   orderController.createOrder
 );
+router.post('/create-payment', authMiddleware(['user']), orderController.createPayPalPayment);
+router.get('/success', orderController.handlePaymentSuccess);
+router.get('/cancel', orderController.handlePaymentCancel);
+router.get('/failed', orderController.handlePaymentFailure);
 
 // تعديل حالة الطلب (Admin only)
 router.put(
