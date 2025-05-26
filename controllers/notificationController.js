@@ -167,7 +167,7 @@ exports.sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
 exports.sendNewOrderNotificationToAdmin = async (orderId) => {
   try {
       const adminUser = await User.findOne({ role: 'admin' });
-         console.log('Admin User:', adminUser);
+       
          if (!adminUser) {
            console.error('Admin user not found');
            return;
