@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 
 
@@ -49,6 +50,45 @@ exports.loginUser = async (req, res) => {
     // Send success response with the token
     res.json({ message: 'Login successful', token });
   } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const updates = {};
+    
+    if (name) updates.name = name;
+    if (email) updates.email = email;
+    
+    // إذا تم رفع صورة جديدة
+    if (req.file) {
+      updates.image = req.file.path;
+    }
+
+    // إذا تم إدخال باسورد جديد
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.password = hashedPassword;
+    }
+
+    // تحديث بيانات المستخدم
+    const updatedUser = await User.findByIdAndUpdate(req.user.userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // إخفاء الباسورد من الرد النهائي
+    updatedUser.password = undefined;
+
+    res.json({ message: 'Profile updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
