@@ -43,6 +43,7 @@ app.use('/api/contact', contactMessagesRoutes); // Add contact routes
 app.use('/api/settings', require('./routes/siteSettingsRoutes')); // Add site settings routes
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/paypal', require('./routes/paypalRoutes')); // Add PayPal routes
 
 
 // Start the server
