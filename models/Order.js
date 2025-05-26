@@ -12,6 +12,14 @@ const orderSchema = new mongoose.Schema({
   ],
   total: { type: Number, required: true }, // السعر الكلي للطلب
   status: { type: String, enum: ['Pending', 'Processing', 'Shipped', 'Delivered'], default: 'Pending' },
+   paymentStatus: { 
+    type: String, 
+    enum: ['Pending', 'Completed', 'Failed'], 
+    default: 'Pending' 
+  },
+  paymentId: { type: String }, // ← جديد
+  transactionId: { type: String }, // ← جديد
+
   createdAt: { type: Date, default: Date.now },
 });
 
