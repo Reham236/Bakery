@@ -44,9 +44,23 @@ exports.createPayment = async (req, res) => {
 // استقبال الرد بعد الدفع (Webhook أو Return URL)
 exports.capturePayment = async (req, res) => {
   const { token } = req.query;
-  const orderId = req.body.orderId; // أو جاي من الرابط
+  const { orderId } = req.body;
+
+  if (!token || !orderId) {
+    return res.status(400).json({
+      status: 'failed',
+      message: 'Missing token or orderId'
+    });
+  }
 
   try {
+    // 1. التأكد من وجود الطلب
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // 2. Capture الدفع من PayPal
     const request = new paypal.orders.OrdersCaptureRequest(token);
     request.requestBody({});
 
@@ -54,23 +68,47 @@ exports.capturePayment = async (req, res) => {
     const response = await client.execute(request);
 
     if (response.statusCode === 201) {
-      // تحديث حالة الطلب
+      // 3. تحديث حالة الطلب
       await Order.findByIdAndUpdate(orderId, {
         paymentStatus: 'Completed',
         paymentId: response.result.id,
         transactionId: response.result.purchase_units[0].payments.captures[0].id,
       });
 
-      return res.redirect('http://yourfrontend.com/payment-success'); // ← فرونت
+      return res.status(200).json({
+        status: 'success',
+        message: 'Payment completed successfully',
+        orderId,
+        paymentId: response.result.id,
+        transactionId: response.result.purchase_units[0].payments.captures[0].id
+      });
+
     } else {
       await Order.findByIdAndUpdate(orderId, {
         paymentStatus: 'Failed',
       });
 
-      return res.redirect('http://yourfrontend.com/payment-failure'); // ← فرونت
+      return res.status(400).json({
+        status: 'failed',
+        message: 'Payment failed',
+        orderId
+      });
     }
   } catch (error) {
-    console.error('Error capturing PayPal payment:', error);
-    res.status(500).json({ message: 'Error capturing payment' });
+    console.error('Error capturing PayPal payment:', error.message);
+    
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        status: 'failed',
+        message: 'Invalid PayPal token or order not found',
+        details: error.message
+      });
+    }
+
+    res.status(500).json({
+      status: 'error',
+      message: 'Error capturing payment',
+      error: error.message
+    });
   }
 };
