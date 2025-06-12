@@ -14,5 +14,6 @@ router.put(
   upload.single('image'),
   authController.updateProfile
 );
+router.get('/profile', authMiddleware(['user', 'admin']), authController.getProfile);
 
 module.exports = router;

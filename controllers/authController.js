@@ -92,3 +92,36 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+// عرض بروفايل المستخدم الحالي
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // جلب بيانات المستخدم بدون الباسورد
+    const user = await User.findById(userId).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // إذا كانت الصورة موجودة، نضيف رابط الصورة الكامل
+    let imageUrl = null;
+    if (user.image) {
+      imageUrl = `${req.protocol}://${req.get('host')}/${user.image}`;
+    }
+
+    res.json({
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+       
+        image: imageUrl,
+        favorites: user.favorites
+      }
+    });
+  } catch (error) {
+    console.error('Get Profile Error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
