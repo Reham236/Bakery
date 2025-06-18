@@ -25,7 +25,7 @@ exports.createPayment = async (req, res) => {
         payment_method: "paypal"
       },
       redirect_urls: {
-        return_url: `http://localhost:5000/api/payments/capture-payment?orderId=${orderId}`,
+        return_url: `https://bakeryproject-1onw.onrender.com/api/payments/capture-payment?orderId=${orderId}`,
         cancel_url: 'https://vanilla-orpin-eight.vercel.app/order-cancel'
       },
       transactions: [{
