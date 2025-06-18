@@ -96,18 +96,18 @@ exports.updateProfile = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
-
-    // جلب بيانات المستخدم بدون الباسورد
     const user = await User.findById(userId).select('-password');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // إذا كانت الصورة موجودة، نضيف رابط الصورة الكامل
+    // تعديل هنا لاستخدام المسار الصحيح
     let imageUrl = null;
     if (user.image) {
-      imageUrl = `${req.protocol}://${req.get('host')}/${user.image}`;
+      // إذا كان المسار يحتوي على uploads بالفعل، لا تضفه مرة أخرى
+      const basePath = user.image.startsWith('uploads/') ? '' : 'uploads/';
+      imageUrl = `${req.protocol}://${req.get('host')}/${basePath}${user.image}`;
     }
 
     res.json({
@@ -115,7 +115,6 @@ exports.getProfile = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-       
         image: imageUrl,
         favorites: user.favorites
       }
