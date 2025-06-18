@@ -1,17 +1,9 @@
 
-const checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
 
-function createPayPalClient() {
-  const clientId = 'ARRUG8KATHcR4EzweZ7KQvmzDrcBUge5JXx_g71YpoQk_B0_zOs0L64sTJycnzvLNlBbO36v9ex-eRMY' ;
-  const clientSecret = 'EDHB0s2ciJnK0owo0rMn1EiCqLIA44KBBS7uRoXpG82ZtAeyWrdBREd32hs0ghArgLxcZ-C7j1O4xrCO';
-
-  // إنشاء البيئة (Sandbox أو Production)
-  const environment = new checkoutNodeJssdk.core.SandboxEnvironment(clientId, clientSecret);
-
-  // إنشاء العميل باستخدام البيئة
-  const client = new checkoutNodeJssdk.core.PayPalHttpClient(environment);
-
-  return client;
-}
-
-module.exports = createPayPalClient;
+var paypal = require('paypal-rest-sdk');
+paypal.configure({
+  'mode': 'sandbox', //sandbox or live
+  'client_id': 'ASit7SSjLs1NwJb_OFVkxOu41LO4h9myOuC9QzwsZAE9XpUF9Mu_4mtTlvxoMeObnkp0pkIoFgCqituI',
+  'client_secret': 'EF0yERRnGcfSNXQSy7jaCBpno-eiStMPGMNPHDPJ1wSuSk8QlWs8IqT5VtgLfg_w75-yIxxxS9DgXqvO'
+});
+module.exports = paypal;

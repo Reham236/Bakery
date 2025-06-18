@@ -12,7 +12,7 @@ router.get(
 );
 
 // استقبال النتيجة بعد الدفع
-router.post(
+router.get(
   '/capture-payment',
   paymentController.capturePayment
 );

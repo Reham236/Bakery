@@ -31,13 +31,14 @@ exports.createOrder = async (req, res) => {
       // حساب السعر الإجمالي لكل منتج
       const productTotal = product.price * productData.quantity;
       total += productTotal;
+      total = parseFloat(total.toFixed(2)); // التأكد من دقة السعر الكلي
 
       // تخزين تفاصيل المنتج مع الكمية
       productsWithDetails.push({
         product: product._id,
         quantity: productData.quantity,
-        price: product.price,
-        totalPrice: productTotal,
+        price: parseFloat(product.price.toFixed(2)), // سعر المنتج
+        totalPrice: parseFloat(productTotal.toFixed(2)), // السعر الإجمالي للمنتج
       });
     }
 

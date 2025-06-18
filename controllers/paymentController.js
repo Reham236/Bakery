@@ -1,114 +1,132 @@
-const paypal = require('@paypal/checkout-server-sdk');
-const paypalClient = require('../utils/paypalClient');
-const Order = require('../models/Order');
+
+
+  const paypalClient = require('../utils/paypalClient');
+  const Order = require('../models/Order');
+
+
+
+
+
 
 exports.createPayment = async (req, res) => {
   try {
     const orderId = req.params.orderId;
 
     // البحث عن الطلب
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate('products.product');
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // إنشاء طلب الدفع في PayPal
-    const request = new paypal.orders.OrdersCreateRequest();
-    request.prefer('return=representation');
-    request.requestBody({
-      intent: 'CAPTURE',
-      purchase_units: [{
-        amount: {
-          currency_code: 'USD',
-          value: order.total.toString(),
+    // إنشاء كائن الدفع
+    const create_payment_json = {
+      intent: "sale",
+      payer: {
+        payment_method: "paypal"
+      },
+      redirect_urls: {
+        return_url: `http://localhost:5000/api/payments/capture-payment?orderId=${orderId}`,
+        cancel_url: 'https://vanilla-orpin-eight.vercel.app/order-cancel'
+      },
+      transactions: [{
+        item_list: {
+          items: order.products.map(p => ({
+            name: p.name,
+            sku: p._id,
+            price: p.price.toFixed(2),
+            currency: "USD",
+            quantity: p.quantity
+          }))
         },
-      }],
+        amount: {
+          // في createPayment function
+       
+          currency: "USD",
+          total: order.total.toFixed(2)
+        },
+        description: `Payment for order #${orderId}`
+      }]
+    };
+
+
+
+    paypalClient.payment.create(create_payment_json, function (error, payment) {
+      if (error) {
+        console.error("Error creating PayPal payment:", error);
+        return res.status(500).json({ message: "Failed to create PayPal payment" ,conserr: error});
+      }
+
+      // البحث عن رابط التوجيه للمستخدم
+      const approvalUrl = payment.links.find(link => link.rel === 'approval_url')?.href;
+
+      res.json({
+        approvalUrl,
+        paymentId: payment.id,
+        orderId: order._id
+      });
     });
 
-    const client = paypalClient();
-    const response = await client.execute(request);
-
-    // إرجاع رابط الدفع للمستخدم
-    const approvalLink = response.result.links.find(link => link.rel === 'approve');
-
-    res.json({
-      approvalUrl: approvalLink.href,
-      orderId: order._id,
-    });
   } catch (error) {
     console.error('Error creating PayPal payment:', error);
     res.status(500).json({ message: 'Server Error - Payment Failed' });
   }
 };
 
-// استقبال الرد بعد الدفع (Webhook أو Return URL)
-exports.capturePayment = async (req, res) => {
-  const { token } = req.query;
-  const { orderId } = req.body;
 
-  if (!token || !orderId) {
+exports.capturePayment = async (req, res) => {
+  const {orderId,paymentId, PayerID } = req.query;
+
+  
+
+  if (!paymentId || !PayerID || !orderId) {
     return res.status(400).json({
       status: 'failed',
-      message: 'Missing token or orderId'
+      message: 'Missing parameters: paymentId, PayerID, or orderId'
     });
   }
 
-  try {
-    // 1. التأكد من وجود الطلب
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+  const execute_payment_json = {
+    payer_id: PayerID
+  };
+
+  paypalClient.payment.execute(paymentId, execute_payment_json, async function (error, payment) {
+    if (error) {
+      console.error("Error executing PayPal payment:", error);
+      // تحديث الحالة إلى Failed إذا كان في خطأ
+      await Order.findByIdAndUpdate(orderId, {
+        paymentStatus: 'Failed'
+      });
+      return res.status(500).json({
+        status: 'failed',
+        message: 'Payment execution failed',
+        error: error.message
+      });
     }
 
-    // 2. Capture الدفع من PayPal
-    const request = new paypal.orders.OrdersCaptureRequest(token);
-    request.requestBody({});
+    if (payment.state === 'approved') {
+      const transaction = payment.transactions[0];
+      const transactionId = transaction.related_resources[0]?.sale?.id;
 
-    const client = paypalClient();
-    const response = await client.execute(request);
-
-    if (response.statusCode === 201) {
-      // 3. تحديث حالة الطلب
+      // ✅ هنا يتم تحديث الحالة إلى "Completed"
       await Order.findByIdAndUpdate(orderId, {
         paymentStatus: 'Completed',
-        paymentId: response.result.id,
-        transactionId: response.result.purchase_units[0].payments.captures[0].id,
+        paymentId: payment.id,
+        transactionId: transactionId
       });
 
-      return res.status(200).json({
-        status: 'success',
-        message: 'Payment completed successfully',
-        orderId,
-        paymentId: response.result.id,
-        transactionId: response.result.purchase_units[0].payments.captures[0].id
-      });
-
+      // ✅ تحويل المستخدم إلى صفحة success (اختياري)
+      return res.redirect(`https://vanilla-orpin-eight.vercel.app/order-success?orderId=${orderId}`);
     } else {
+      // تحديث الحالة إلى Failed إذا لم يتم الموافقة
       await Order.findByIdAndUpdate(orderId, {
-        paymentStatus: 'Failed',
+        paymentStatus: 'Failed'
       });
 
       return res.status(400).json({
         status: 'failed',
-        message: 'Payment failed',
+        message: 'Payment not approved',
         orderId
       });
     }
-  } catch (error) {
-    console.error('Error capturing PayPal payment:', error.message);
-    
-    if (error.statusCode === 404) {
-      return res.status(404).json({
-        status: 'failed',
-        message: 'Invalid PayPal token or order not found',
-        details: error.message
-      });
-    }
-
-    res.status(500).json({
-      status: 'error',
-      message: 'Error capturing payment',
-      error: error.message
-    });
-  }
+  });
 };
