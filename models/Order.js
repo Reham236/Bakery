@@ -5,6 +5,7 @@ const orderSchema = new mongoose.Schema({
   products: [
     {
       product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+      name: { type: String, required: true }, // اسم المنتج
       quantity: { type: Number, required: true },
       price: { type: Number, required: true }, // سعر المنتج عند وقت الشراء
       totalPrice: { type: Number, required: true }, // السعر الإجمالي لكل منتج

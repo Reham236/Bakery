@@ -32,7 +32,7 @@ exports.createOrder = async (req, res) => {
       const productTotal = product.price * productData.quantity;
       total += productTotal;
       total = parseFloat(total.toFixed(2)); // التأكد من دقة السعر الكلي
-
+console.log(product.name)
       // تخزين تفاصيل المنتج مع الكمية
       productsWithDetails.push({
         product: product._id,
