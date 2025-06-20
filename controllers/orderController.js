@@ -36,6 +36,7 @@ exports.createOrder = async (req, res) => {
       // تخزين تفاصيل المنتج مع الكمية
       productsWithDetails.push({
         product: product._id,
+        name: product.name, // اسم المنتج
         quantity: productData.quantity,
         price: parseFloat(product.price.toFixed(2)), // سعر المنتج
         totalPrice: parseFloat(productTotal.toFixed(2)), // السعر الإجمالي للمنتج
