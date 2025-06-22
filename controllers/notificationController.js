@@ -3,6 +3,8 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const CustomOrder = require('../models/CustomOrder');
+const Order = require('../models/Order');
+const Product = require('../models/Product');
 
 // جلب إشعارات المستخدم الحالي
 exports.getUserNotifications = async (req, res) => {
@@ -84,7 +86,7 @@ exports.sendCustomOrderPriceUpdateNotification = async (userId, orderId, price) 
 exports.sendContactMessageNotificationToAdmin = async (messageSub) => {
   try {
       const adminUser = await User.findOne({ role: 'admin' });
-         console.log('Admin User:', adminUser);
+       
          if (!adminUser) {
            console.error('Admin user not found');
            return;
@@ -130,14 +132,14 @@ exports.sendNewCustomOrderNotificationToAdmin = async (customOrderId) => {
   try {
     // جلب بيانات الـ Admin
     const adminUser = await User.findOne({ role: 'admin' });
-    console.log('Admin User:', adminUser);
+   
     if (!adminUser) {
       console.error('Admin user not found');
       return;
     }
-
+    const orderr = await CustomOrder.findById(customOrderId)
     // إنشاء رسالة الإشعار
-    const message = `New custom order received with ID: ${customOrderId}`;
+    const message = `New custom order received : ${orderr.description}`;
 
     // إنشاء الإشعار
     await Notification.create({
@@ -153,7 +155,8 @@ exports.sendNewCustomOrderNotificationToAdmin = async (customOrderId) => {
 };
 exports.sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
   try {
-      const message = `Your custom order with ID: ${orderId} has been updated to status: ${status}.`;
+    
+      const message = `Your  order with ID: ${orderId} has been updated to status: ${status}.`;
 
       await Notification.create({
           user: userId,
@@ -172,7 +175,7 @@ exports.sendNewOrderNotificationToAdmin = async (orderId) => {
            console.error('Admin user not found');
            return;
          }
-     
+     const order = await Order.findById(orderId);
          // إنشاء رسالة الإشعار
          const message = `New  order received with ID: ${orderId}`;
      
@@ -188,9 +191,10 @@ exports.sendNewOrderNotificationToAdmin = async (orderId) => {
          console.error('Error sending new  order notification:', error);
        }
 };
-exports.sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
+exports.sendCu_OrderStatusUpdateNotification = async (userId, orderId, status) => {
   try {
-      const message = `تم تحديث حالة الطلب #${orderId} إلى: ${status}`;
+    const order = await CustomOrder.findById(orderId);
+      const message = `  Your order : ${order.description} has been updated to status: ${status}.`; 
 
       await Notification.create({
           user: userId,
@@ -204,7 +208,7 @@ exports.sendOrderStatusUpdateNotification = async (userId, orderId, status) => {
 exports.sendNewProductNotificationToUsers = async (productName) => {
     try {
         const users = await User.find();
-        const message = `تم إضافة منتج جديد: ${productName}`;
+        const message = `There is a new product Added ${productName} `;
 
         for (const user of users) {
             await Notification.create({ user: user._id, message, type: 'new_product' });
@@ -215,13 +219,13 @@ exports.sendNewProductNotificationToUsers = async (productName) => {
 };
 exports.sendOfferAddedNotificationToAdmin = async (productId) => {
   try {
-      const admin = await User.findOne({ role: 'admin' });
+      const user = await User.findOne({ role: 'user' });
       if (!admin) return;
 
       const product = await Product.findById(productId);
-      const message = `تم إضافة عرض على المنتج: ${product.name}`;
+      const message = ` There is new Offer : ${product.name}`;
 
-      await Notification.create({ user: admin._id, message, type: 'offer_added' });
+      await Notification.create({ user: user._id, message, type: 'offer_added' });
   } catch (error) {
       console.error('Error sending offer added notification:', error);
   }
