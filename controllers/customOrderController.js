@@ -6,7 +6,7 @@ const { sendOrderStatusUpdateNotification } = require('./notificationController'
 // إضافة طلب مخصص
 exports.createCustomOrder = async (req, res) => {
   try {
-    const { description, designImage, deliveryDate } = req.body;
+    const { description, deliveryDate } = req.body;
 
     // التحقق من وجود البيانات الأساسية
     if (!description) {
@@ -15,11 +15,15 @@ exports.createCustomOrder = async (req, res) => {
 
     const orderData = {
       user: req.user.userId,
-      description,
-      designImage
+      description
     };
 
-    // إذا كان هناك تاريخ تسليم، نضيفه
+    // إذا كان هناك تصميم تم رفعه
+    if (req.file) {
+      orderData.designImage = req.protocol + '://' + req.get('host') +`/uploads/designs/${req.file.filename}`
+    }
+
+    // إذا كان هناك تاريخ تسليم
     if (deliveryDate) {
       orderData.deliveryDate = new Date(deliveryDate);
     }

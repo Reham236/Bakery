@@ -1,11 +1,11 @@
 const express = require('express');
 const customOrderController = require('../controllers/customOrderController');
 const authMiddleware = require('../middleware/authMiddleware');
-
+const upload = require('../middleware/uploadMiddleware');
 const router = express.Router();
 
 // إضافة طلب مخصص (User فقط)
-router.post('/', authMiddleware(['user']), customOrderController.createCustomOrder);
+router.post('/', upload.single('designImage'), authMiddleware(['user']), customOrderController.createCustomOrder);
 
 // عرض جميع الطلبات المخصصة (Admin فقط)
 router.get('/', authMiddleware(['admin']), customOrderController.getAllCustomOrders);
