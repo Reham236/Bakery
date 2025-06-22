@@ -9,5 +9,9 @@ router.post('/products/:productId/reviews', authMiddleware(['user']), reviewCont
 
 // عرض جميع التقييمات لمنتج معين
 router.get('/products/:productId/reviews', reviewController.getReviews);
+router.delete('/products/:productId/reviews/:reviewId', 
+  authMiddleware([ 'admin']), 
+  reviewController.deleteReview
+);
 
 module.exports = router;
