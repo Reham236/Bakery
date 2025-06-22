@@ -50,7 +50,7 @@ const { sendOrderStatusUpdateNotification } = require('./notificationController'
         totalPrice: parseFloat(productTotal.toFixed(2)), // السعر الإجمالي للمنتج
       });
     }
-
+    
     // إنشاء الطلب
     const order = new Order({
       user: req.user.userId,

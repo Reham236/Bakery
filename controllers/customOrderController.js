@@ -2,7 +2,7 @@ const CustomOrder = require('../models/CustomOrder');
 
 const { sendCustomOrderPriceUpdateNotification } = require('./notificationController');
 const { sendNewCustomOrderNotificationToAdmin } = require('./notificationController');
-const { sendOrderStatusUpdateNotification } = require('./notificationController');
+const { sendCu_OrderStatusUpdateNotification } = require('./notificationController');
 // إضافة طلب مخصص
 exports.createCustomOrder = async (req, res) => {
   try {

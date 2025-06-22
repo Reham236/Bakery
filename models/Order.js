@@ -21,6 +21,8 @@ const orderSchema = new mongoose.Schema({
   paymentId: { type: String }, // ← جديد
   transactionId: { type: String }, // ← جديد
 
+    deliveryLocation: { type: String, required: true }, // عنوان التوصيل كنص كامل
+  contactPhone: { type: String, required: true },     // رقم الهاتف
   createdAt: { type: Date, default: Date.now },
 });
 
