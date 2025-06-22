@@ -20,7 +20,7 @@ exports.createCustomOrder = async (req, res) => {
 
     // إذا كان هناك تصميم تم رفعه
     if (req.file) {
-      orderData.designImage = req.protocol + '://' + req.get('host') +`/uploads/designs/${req.file.filename}`
+      orderData.designImage = req.protocol + '://' + req.get('host') +`/uploads/${req.file.filename}`
     }
 
     // إذا كان هناك تاريخ تسليم
